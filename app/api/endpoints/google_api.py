@@ -14,7 +14,7 @@ from app.services.google_api import spreadsheets_create, set_user_permissions, s
 router = APIRouter()
 
 
-@router.post(
+@router.get(
     '/',
     response_model=dict[str, str],
     dependencies=[Depends(current_superuser)],
