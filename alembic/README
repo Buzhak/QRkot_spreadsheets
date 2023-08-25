@@ -1,1 +1,37 @@
-Generic single-database configuration with an async dbapi.
+## Полезные комнады для работы с миграциями.
+
+Создание миграции:
+
+```
+alembic revision --autogenerate -m "name"
+```
+
+Применение миграции:
+
+```
+alembic upgrade head
+```
+
+Отмена всех миграций:
+
+```
+alembic downgrade base
+```
+
+Просмотр истории миграций:
+
+```
+alembic history
+```
+
+Просмотр последней миграции:
+
+```
+alembic currenta
+```
+
+Получение справки по командам alembic:
+
+```
+alembic -h
+```

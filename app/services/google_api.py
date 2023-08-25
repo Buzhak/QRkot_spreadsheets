@@ -9,7 +9,8 @@ from app.core.google_constants import (
     DESCTIPTION,
     FORMAT,
     NAME,
-    RANGE,
+    RANGE_END,
+    RANGE_START,
     ROW_COUNT,
     SHEET_ID,
     TIME,
@@ -18,13 +19,30 @@ from app.core.google_constants import (
 )
 
 
-async def get_title() -> str:
+def get_title() -> str:
     '''
     Функция формирует название сотоящее из строки
     и текущего времени
     '''
     now_date_time = datetime.now().strftime(FORMAT)
     return TITLE + now_date_time
+
+
+SPREAD_SHEET_BODY = {
+    'properties': {
+        'title': get_title(),
+        'locale': 'ru_RU'
+    },
+    'sheets': [{'properties': {
+        'sheetType': 'GRID',
+        'sheetId': SHEET_ID,
+        'title': get_title(),
+        'gridProperties': {
+            'rowCount': ROW_COUNT,
+            'columnCount': COLUMN_COUNT
+        }
+    }}]
+}
 
 
 async def spreadsheets_create(wrapper_services: Aiogoogle) -> str:
@@ -34,25 +52,16 @@ async def spreadsheets_create(wrapper_services: Aiogoogle) -> str:
     '''
 
     service = await wrapper_services.discover('sheets', 'v4')
-    title = await get_title()
-    spreadsheet_body = {
-        'properties': {'title': title,
-                       'locale': 'ru_RU'},
-        'sheets': [{'properties': {'sheetType': 'GRID',
-                                   'sheetId': SHEET_ID,
-                                   'title': title,
-                                   'gridProperties': {'rowCount': ROW_COUNT,
-                                                      'columnCount': COLUMN_COUNT}}}]
-    }
+    spread_sheet_body = SPREAD_SHEET_BODY
     response = await wrapper_services.as_service_account(
-        service.spreadsheets.create(json=spreadsheet_body)
+        service.spreadsheets.create(json=spread_sheet_body)
     )
-    spreadsheetid = response['spreadsheetId']
-    return spreadsheetid
+    spread_sheet_id = response['spreadsheetId']
+    return spread_sheet_id
 
 
 async def set_user_permissions(
-        spreadsheetid: str,
+        spread_sheet_id: str,
         wrapper_services: Aiogoogle
 ) -> None:
     '''
@@ -65,28 +74,30 @@ async def set_user_permissions(
     service = await wrapper_services.discover('drive', 'v3')
     await wrapper_services.as_service_account(
         service.permissions.create(
-            fileId=spreadsheetid,
+            fileId=spread_sheet_id,
             json=permissions_body,
             fields="id"
         ))
 
 
 async def spreadsheets_update_value(
-        spreadsheetid: str,
+        spread_sheet_id: str,
         projects_report: list[Row],
         wrapper_services: Aiogoogle
 ) -> None:
     '''Обновление данных в гугл таблице'''
-    title = await get_title()
+    title = get_title()
     service = await wrapper_services.discover('sheets', 'v4')
     table_values = [
         [title],
         [TITLE_2],
-        [NAME, TIME, DESCTIPTION]
+        [NAME, TIME, DESCTIPTION],
+        *[
+            [
+                name, str(timedelta(seconds=date)), description
+            ] for name, date, description in projects_report
+        ]
     ]
-    for project in projects_report:
-        new_row = [str(project[0]), str(timedelta(seconds=project[1])), str(project[2])]
-        table_values.append(new_row)
 
     update_body = {
         'majorDimension': 'ROWS',
@@ -94,8 +105,8 @@ async def spreadsheets_update_value(
     }
     await wrapper_services.as_service_account(
         service.spreadsheets.values.update(
-            spreadsheetId=spreadsheetid,
-            range=RANGE,
+            spreadsheetId=spread_sheet_id,
+            range=f'{RANGE_START}:{RANGE_END}',
             valueInputOption='USER_ENTERED',
             json=update_body
         )

@@ -68,3 +68,10 @@ async def no_data_in_bd(data: list) -> None:
             status_code=404,
             detail='Данные отсутствуют.',
         )
+
+
+async def service_is_unavailable() -> None:
+    raise HTTPException(
+        status_code=503,
+        detail='Сервис временно недоступен',
+    )
