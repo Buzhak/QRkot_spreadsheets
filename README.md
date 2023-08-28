@@ -60,6 +60,8 @@ EMAIL # Тут ваш личный email для google аккаунта
 * Alembic
 * SQLite
 * JSON
+* Google Sheets API
+* Google Drive API
 
 ## Запуск проекта
 
